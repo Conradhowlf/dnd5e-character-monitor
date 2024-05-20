@@ -16,6 +16,59 @@ const EFFECT_ENABLED_TEMPLATE = `${TEMPLATE_DIR}/effectEnabled.hbs`;
 const EFFECT_DURATION_TEMPLATE = `${TEMPLATE_DIR}/effectDuration.hbs`;
 const EFFECT_EFFECTS_TEMPLATE = `${TEMPLATE_DIR}/effectEffects.hbs`;
 
+Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
+    const oldValue = actor.system.attributes.inspiration;
+    if (!data.system || !data.system.attributes) return;
+    const value = data.system.attributes.inspiration;
+    if (value !== oldValue) {
+        const message = await ChatMessage.create({
+            content: `
+                <span class="inspiration-cm-message">
+                    <div class="inspiration-cm-block" style="
+                        background: linear-gradient(135deg, #e6e6e6, #f8f8f8, #d4d4d4, #f8f8f8, #e6e6e6); 
+                        padding: 10px; 
+                        border: 2px solid black; 
+                        outline: 3px solid gold; 
+                        border-radius: 10px;
+                        box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.6), 
+                                    0 0 15px rgba(0, 0, 0, 0.5);
+                        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+                        font-size: 18px;
+                        font-family: 'MrEaves', sans-serif;
+                    ">
+                        <h4>${actor.name}</h4>
+                        <p><u>${value ? "Gained" : "Used"}</u> <b>Inspiration</b></p>
+                    </div>
+                </span>
+            `,
+            speaker: null,
+            flags: { inspirationMessage: true }
+        });
+        
+        console.log(message);
+    }
+});
+
+Hooks.on("renderChatMessage", (app, html, data) => {
+    const flags = data?.message?.flags;
+
+    if (flags?.inspirationMessage) {
+        html.addClass("inspiration-cm-message inspiration-cm-block");
+    }
+});
+
+// Inject custom CSS for the chat message
+const customCSS = `
+.inspiration-cm-block header.message-header {
+    display: none !important;
+}
+`;
+
+const style = document.createElement('style');
+style.type = 'text/css';
+style.innerHTML = customCSS;
+document.getElementsByTagName('head')[0].appendChild(style);
+
 Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
 
@@ -497,7 +550,6 @@ class CharacterMonitor {
 
                     // Determine if update was initiated by item being rolled, or a rest.
                     checkSecondHooks({ spellLevel: levelNum }).then(async (didFire) => {
-                        if (didFire) return;
 
                         hbsData.spellSlot = {
                             label: CONFIG.DND5E.spellLevels[levelNum],
