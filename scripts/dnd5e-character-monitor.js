@@ -17,10 +17,16 @@ const EFFECT_DURATION_TEMPLATE = `${TEMPLATE_DIR}/effectDuration.hbs`;
 const EFFECT_EFFECTS_TEMPLATE = `${TEMPLATE_DIR}/effectEffects.hbs`;
 
 Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
+    // Check if the update affects inspiration
+    if (!data.system || !data.system.attributes || typeof data.system.attributes.inspiration === 'undefined') return;
+    
+    // Retrieve the current inspiration value
     const oldValue = actor.system.attributes.inspiration;
-    if (!data.system || !data.system.attributes) return;
-    const value = data.system.attributes.inspiration;
-    if (value !== oldValue) {
+    // Retrieve the new inspiration value
+    const newValue = data.system.attributes.inspiration;
+
+    // If the inspiration value has changed, send the message
+    if (newValue !== oldValue) {
         const message = await ChatMessage.create({
             content: `
                 <span class="inspiration-cm-message">
@@ -37,7 +43,7 @@ Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
                         font-family: 'MrEaves', sans-serif;
                     ">
                         <h4>${actor.name}</h4>
-                        <p><u>${value ? "Gained" : "Used"}</u> <b>Inspiration</b></p>
+                        <p><u>${newValue ? "Gained" : "Used"}</u> <b>Inspiration</b></p>
                     </div>
                 </span>
             `,
@@ -63,6 +69,12 @@ const customCSS = `
     display: none !important;
 }
 `;
+
+Hooks.once('init', () => {
+    const style = document.createElement('style');
+    style.innerHTML = customCSS;
+    document.head.appendChild(style);
+});
 
 const style = document.createElement('style');
 style.type = 'text/css';
